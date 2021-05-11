@@ -35,7 +35,6 @@ library
       Koriel.Id
       Koriel.Lambda.Parser
       Koriel.Lambda.Syntax
-      Koriel.Monad
       Koriel.MonadUniq
       Koriel.Prelude
       Koriel.Pretty
