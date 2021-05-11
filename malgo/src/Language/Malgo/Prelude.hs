@@ -13,6 +13,7 @@ module Language.Malgo.Prelude
   ( module Koriel.Prelude,
     MonadMalgo (..),
     MalgoM (..),
+    MalgoEnv (..),
     errorOn,
     Opt (..),
     defaultOpt,
@@ -23,14 +24,15 @@ module Language.Malgo.Prelude
 where
 
 import Control.Monad.Fix (MonadFix)
+import Data.Kind (Type)
 import Koriel.MonadUniq
 import Koriel.Prelude
 import Koriel.Pretty
 import System.FilePath ((-<.>))
 import Text.Megaparsec.Pos (SourcePos (sourceLine), unPos)
 
-newtype MalgoM a = MalgoM {unMalgoM :: ReaderT Opt IO a}
-  deriving newtype (Functor, Applicative, Monad, MonadIO, MonadFix, MonadFail)
+newtype MalgoM a = MalgoM {unMalgoM :: UniqT (ReaderT (MalgoEnv MalgoM) IO) a}
+  deriving newtype (Functor, Applicative, Monad, MonadIO, MonadFix, MonadFail, MonadUniq)
 
 class MonadIO m => MonadMalgo m where
   getOpt :: m Opt
@@ -55,7 +57,7 @@ errorOn pos x = do
       $+$ pPrint (unPos $ sourceLine pos) <+> "|" <+> text line
 
 instance MonadMalgo MalgoM where
-  getOpt = MalgoM ask
+  getOpt = MalgoM $ lift $ asks _malgoOpt
 
 instance MonadMalgo m => MonadMalgo (ReaderT r m)
 
@@ -99,6 +101,8 @@ defaultOpt src =
       modulePaths = [],
       forceRebuild = False
     }
+
+newtype MalgoEnv (m :: Type -> Type) = MalgoEnv {_malgoOpt :: Opt}
 
 data With x v = With {_ann :: x, _value :: v}
   deriving stock (Eq, Ord, Bounded, Read, Show, Generic)
