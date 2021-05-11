@@ -3,10 +3,13 @@
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE DerivingStrategies #-}
 {-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE TypeFamilies #-}
+{-# LANGUAGE TypeSynonymInstances #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
 module Language.Malgo.Prelude
@@ -23,6 +26,7 @@ module Language.Malgo.Prelude
   )
 where
 
+import Colog
 import Control.Monad.Fix (MonadFix)
 import Data.Kind (Type)
 import Koriel.MonadUniq
@@ -31,8 +35,8 @@ import Koriel.Pretty
 import System.FilePath ((-<.>))
 import Text.Megaparsec.Pos (SourcePos (sourceLine), unPos)
 
-newtype MalgoM a = MalgoM {unMalgoM :: UniqT (ReaderT (MalgoEnv MalgoM) IO) a}
-  deriving newtype (Functor, Applicative, Monad, MonadIO, MonadFix, MonadFail, MonadUniq)
+newtype MalgoM a = MalgoM {unMalgoM :: ReaderT (MalgoEnv MalgoM) (UniqT IO) a}
+  deriving newtype (Functor, Applicative, Monad, MonadIO, MonadFix, MonadFail, MonadUniq, MonadReader (MalgoEnv MalgoM))
 
 class MonadIO m => MonadMalgo m where
   getOpt :: m Opt
@@ -57,7 +61,7 @@ errorOn pos x = do
       $+$ pPrint (unPos $ sourceLine pos) <+> "|" <+> text line
 
 instance MonadMalgo MalgoM where
-  getOpt = MalgoM $ lift $ asks _malgoOpt
+  getOpt = MalgoM $ asks _malgoOpt
 
 instance MonadMalgo m => MonadMalgo (ReaderT r m)
 
@@ -102,7 +106,13 @@ defaultOpt src =
       forceRebuild = False
     }
 
-newtype MalgoEnv (m :: Type -> Type) = MalgoEnv {_malgoOpt :: Opt}
+data MalgoEnv (m :: Type -> Type) = MalgoEnv {_malgoOpt :: Opt, _malgoLogAction :: LogAction m Message}
+
+instance HasLog (MalgoEnv m) Message m where
+  getLogAction = _malgoLogAction
+  {-# INLINE getLogAction #-}
+  setLogAction newLogAction env = env {_malgoLogAction = newLogAction}
+  {-# INLINE setLogAction #-}
 
 data With x v = With {_ann :: x, _value :: v}
   deriving stock (Eq, Ord, Bounded, Read, Show, Generic)

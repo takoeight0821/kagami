@@ -14,6 +14,7 @@ dependencies:
   - binary
   - binary-instances
   - bytestring
+  - co-log
   - containers
   - data-fix
   - deriving-compat

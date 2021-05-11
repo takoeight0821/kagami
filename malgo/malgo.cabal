@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 1cbe17dc40b31cc945fca339116f0f0cbbc057f24422ec7756940715465a8052
+-- hash: 2131868d918725ee8ddcf99e56e267c7f10f13fcfac9b8ada92cfe32451b71bd
 
 name:           malgo
 version:        1.0.0.0
@@ -54,6 +54,7 @@ library
     , binary
     , binary-instances
     , bytestring
+    , co-log
     , containers
     , data-fix
     , deriving-compat
@@ -88,6 +89,7 @@ executable malgoc
     , binary
     , binary-instances
     , bytestring
+    , co-log
     , containers
     , data-fix
     , deriving-compat
