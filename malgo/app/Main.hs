@@ -23,6 +23,7 @@ main = do
             Right x -> x
             Left err -> error $ errorBundlePretty err
       Driver.compileFromAST parsedAst opt
+    Build -> error "not implemented"
 
 toLLOpt :: Parser Opt
 toLLOpt =
@@ -46,13 +47,15 @@ toLLOpt =
   )
     <**> helper
 
-newtype Command = ToLL Opt
+data Command
+  = ToLL Opt
+  | Build
 
 parseCommand :: IO Command
 parseCommand = do
   command <-
     execParser
-      ( info (subparser toLL <**> helper) $
+      ( info (subparser toLL <|> subparser build <**> helper) $
           fullDesc
             <> header "malgo programming language"
       )
@@ -61,6 +64,7 @@ parseCommand = do
       if null (dstName opt)
         then pure $ ToLL $ opt {dstName = srcName opt & extension .~ ".ll"}
         else pure command
+    Build -> pure Build
   where
     toLL =
       command "to-ll" $
@@ -68,3 +72,9 @@ parseCommand = do
           fullDesc
             <> progDesc "Compile Malgo file (.mlg) to LLVM Textual IR (.ll)"
             <> header "malgo to LLVM Textual IR Compiler"
+    build =
+      command "build" $
+        info (pure Build) $
+          fullDesc
+            <> progDesc "Build Malgo project"
+            <> header "malgo build"
